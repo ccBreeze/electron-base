@@ -2,4 +2,11 @@ node_modules
 dist
 out
 .DS_Store
+
+logs
 *.log*
+
+# 目录下的任何文件都不上传
+server/static/*
+# 保留目录
+!server/static/.gitkeep
