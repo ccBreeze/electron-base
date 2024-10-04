@@ -18,6 +18,7 @@ module.exports = {
         ignores: ['index'], //需要忽略的组件名
       },
     ],
+    '@typescript-eslint/no-explicit-any': 'warn',
     'comma-dangle': [
       'error',
       {
