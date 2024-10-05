@@ -21,13 +21,13 @@ const checkFullUpdate = async (event: IpcMainInvokeEvent, serverVersion: string)
   // 1. request 是否允许更新
   const semVer = serverVersion.split('.').slice(0, 3).join('.')
   const isAllowUpdate = compareVersion(semVer, appVersion)
-  if (isAllowUpdate !== 1) {
+  if (isAllowUpdate === 0) {
     logger.info(`~ checkFullUpdate ~ isAllowUpdate: ${isAllowUpdate}`)
     return false
   }
 
   // 2. 询问 OSS .yml 是否有更新
-  autoUpdater.setFeedURL(APP_UPDATE_OSS_URL)
+  autoUpdater.setFeedURL(`${APP_UPDATE_OSS_URL}/${serverVersion}`)
   const info = await autoUpdater.checkForUpdates()
   if (!info) {
     const errorMsg = '~ checkFullUpdate ~ OSS 不存在 latest.yml 文件'
@@ -37,7 +37,7 @@ const checkFullUpdate = async (event: IpcMainInvokeEvent, serverVersion: string)
   const result = compareVersion(info.updateInfo.version, appVersion)
 
   logger.info(`~ checkFullUpdate ~ result: ${result}, info: %o`, info)
-  return result === 1
+  return result !== 0
 }
 
 const downloadFullUpdate = async (event: IpcMainInvokeEvent, channel: string) => {
