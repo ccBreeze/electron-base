@@ -47,7 +47,7 @@ const checkHotUpdate = async (event: IpcMainInvokeEvent, serverVersion: string) 
   const rendererVersion = await getRendererVersion()
   const result = compareVersion(serverVersion, rendererVersion)
   logger.info('~ checkHotUpdate ~ result: %s', result)
-  return result === 1
+  return result !== 0
 }
 
 const checkInstallPackageExists = async (zipPath: string) => {
