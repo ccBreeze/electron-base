@@ -2,7 +2,7 @@ import { ipcMain, app, type IpcMainInvokeEvent } from 'electron'
 import pkg, { type ProgressInfo } from 'electron-updater'
 import { logger } from '../log.ts'
 import { APP_UPDATE_OSS_URL } from '../config/constant.ts'
-import { compareVersion } from './version.ts'
+import { compareVersion } from './utils.ts'
 
 const { autoUpdater, CancellationToken } = pkg
 

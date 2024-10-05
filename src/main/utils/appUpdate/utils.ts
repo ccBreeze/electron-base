@@ -33,3 +33,14 @@ export function compareVersion(version1: string, version2: string) {
 
   return 0
 }
+
+/** 根据 MODE 转换为环境名称 */
+export const convertModeToEnvName = (mode: string): 'PRO' | 'DEV' | string => {
+  if (mode === 'production') return 'PRO'
+  if (mode === 'development') return 'DEV'
+  return mode.toUpperCase()
+}
+
+/** 热更新包名 */
+export const getPackageRendererName = (mode: string, version: string) =>
+  `renderer-${convertModeToEnvName(mode)}-${version}`
