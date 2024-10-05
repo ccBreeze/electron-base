@@ -36,7 +36,12 @@ async function createWindow() {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    // 正常模式 - 访问 app.asar 目录
+    // mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+
+    // 热更新 - 访问 app.asar.unpacked 目录
+    const UNPACKED_DIR = join(app.getAppPath(), '../app.asar.unpacked/renderer/index.html')
+    mainWindow.loadFile(UNPACKED_DIR)
   }
 }
 
