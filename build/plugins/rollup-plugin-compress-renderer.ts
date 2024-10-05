@@ -1,6 +1,7 @@
 import path from 'path'
 import AdmZip from 'adm-zip'
 import packageJson from '../../package.json'
+import { getPackageRendererName } from '../../src/main/utils/appUpdate/utils.ts'
 
 type Params = {
   mode: string
@@ -18,15 +19,13 @@ export default function compressRendererPlugin(params: Params) {
     name: NAME,
 
     writeBundle(options: Options) {
-      const packageMode = params.mode === 'production' ? 'PRO' : params.mode.toUpperCase()
       // 默认值
       Object.assign(params, {
-        // 如果输出在 out 目录
-        // 在下一次 electron-builder 时没有删除，会被 electron-builder 打包到 app.asar 中
+        // 如果输出在 out 目录，在下一次 electron-builder 时没有删除，会被 electron-builder 打包到 app.asar 中
         outputPath: path.join(
           process.cwd(),
           'dist',
-          `renderer-${packageMode}-${packageJson.rendererVersion}.zip`
+          `${getPackageRendererName(params.mode, packageJson.rendererVersion)}.zip`
         ),
       })
 

@@ -7,23 +7,21 @@ import { logger } from '../log.ts'
 import { downloadFileToFolder, DOWNLOAD_STATE, ipcReplyProgress } from '../download.ts'
 import { APP_UPDATE_OSS_URL } from '../config/constant.ts'
 import configStore from '../configStore.ts'
-import { compareVersion } from './version.ts'
+import { compareVersion, convertModeToEnvName, getPackageRendererName } from './utils.ts'
 
 /** app.asar.unpacked 目录路径 */
 const UNPACKED_DIR = import.meta.env.PROD
   ? path.join(app.getAppPath(), '../app.asar.unpacked')
   : path.join(process.cwd(), 'out') // 开发模式热更新无效
 
-const packageMode = import.meta.env.PROD ? 'PRO' : import.meta.env.MODE.toUpperCase()
-const RENDERER_VERSION_KEY = 'rendererVersion_' + packageMode
-const PACKAGE_NAME = 'renderer-' + packageMode
+const RENDERER_VERSION_KEY = `rendererVersion${convertModeToEnvName(import.meta.env.MODE)}`
 
 /** 安装包下载的临时存放目录 - 用于清理未下载成功的 renderer.tmp 文件 */
 const TMEP_DIR_PATH = path.join(UNPACKED_DIR, 'tempPackage')
 
 /** 下载 renderer.zip 文件的指定路径 */
 const getRendererZipPath = (version: string) =>
-  path.join(TMEP_DIR_PATH, `${PACKAGE_NAME}-${version}.zip`)
+  path.join(TMEP_DIR_PATH, `${getPackageRendererName(import.meta.env.MODE, version)}.zip`)
 
 /** 获取 renderer 版本号 */
 const getRendererVersion = async () => {
@@ -64,8 +62,11 @@ const checkInstallPackageExists = async (zipPath: string) => {
 }
 
 const downloadHotUpdate = async (event: IpcMainInvokeEvent, { serverVersion, channel }) => {
-  const downloadUrl = `${APP_UPDATE_OSS_URL}/${PACKAGE_NAME}-${serverVersion}.zip?${+new Date()}`
-  const TMEP_PATH = path.join(TMEP_DIR_PATH, `${PACKAGE_NAME}.tmp`)
+  const packageRendererName = getPackageRendererName(import.meta.env.MODE, serverVersion)
+  // bugfix: 添加时间戳
+  // 请求会有缓存导致无法获取 / 获取不到最新的
+  const downloadUrl = `${APP_UPDATE_OSS_URL}/${packageRendererName}.zip?${+new Date()}`
+  const TMEP_PATH = path.join(TMEP_DIR_PATH, `${packageRendererName}.tmp`)
 
   const zipPath = getRendererZipPath(serverVersion)
   logger.info('~ downloadHotUpdate ~ zipPath: %s', zipPath)
@@ -104,7 +105,7 @@ const downloadHotUpdate = async (event: IpcMainInvokeEvent, { serverVersion, cha
 const installHotUpdate = async (event: IpcMainInvokeEvent, serverVersion: string) => {
   const PACKAGE_DIR = path.join(UNPACKED_DIR, 'renderer')
   const zipPath = getRendererZipPath(serverVersion)
-  logger.info(`~ installHotUpdate ~ PACKAGE_DIR: ${PACKAGE_DIR}, zipPath: ${zipPath}`)
+  logger.info(`installHotUpdate ~ PACKAGE_DIR: ${PACKAGE_DIR}, zipPath: ${zipPath}`)
   try {
     // 1. 解压到指定目录
     const zip = new AdmZip(zipPath)
@@ -119,6 +120,7 @@ const installHotUpdate = async (event: IpcMainInvokeEvent, serverVersion: string
     // bugfix: 网络不稳定时，下载的zip文件可能出现丢包的情况，导致解压失败
     // ERROR: Invalid or unsupported zip format. No END header found
     fsPromises.rm(TMEP_DIR_PATH, { recursive: true })
+    console.log('installHotUpdate ~ err:', err)
     throw err
   }
 }
