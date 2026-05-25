@@ -2,6 +2,8 @@ appId: com.electron.app
 productName: electron-base
 directories:
   buildResources: build
+
+# 打包后会放入到 app.asar 目录中
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -9,8 +11,21 @@ files:
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!out/renderer/**' # app.asar 目录中将不存在 out/renderer 文件夹
+
+# 将文件或目录直接复制到应用程序的资源目录
+extraResources:
+  # 将文件夹复制到 app.asar.unpacked 目录下
+  - { from: 'out/renderer', to: 'app.asar.unpacked/renderer' }
+
+# 不会产生 app.asar 而是一个 app 文件夹
+#asar: false
+
+# 指定创建 asar 存档时要解压的文件
+# app.asar & app.asar.unpacked 都会有一份
 asarUnpack:
   - resources/**
+
 win:
   executableName: electron-base
 nsis:

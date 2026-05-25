@@ -3,7 +3,9 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-function createWindow(): void {
+import { registerIpcModules } from './registerIpcModules.ts'
+
+async function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 900,
@@ -12,13 +14,16 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
+      preload: join(__dirname, '../preload/index.mjs'),
+      sandbox: false,
+    },
   })
 
-  mainWindow.on('ready-to-show', () => {
+  await registerIpcModules(mainWindow)
+
+  mainWindow.on('ready-to-show', async () => {
     mainWindow.show()
+    mainWindow.webContents.openDevTools()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -31,7 +36,12 @@ function createWindow(): void {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    // 正常模式 - 访问 app.asar 目录
+    // mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+
+    // 热更新 - 访问 app.asar.unpacked 目录
+    const UNPACKED_DIR = join(app.getAppPath(), '../app.asar.unpacked/renderer/index.html')
+    mainWindow.loadFile(UNPACKED_DIR)
   }
 }
 
