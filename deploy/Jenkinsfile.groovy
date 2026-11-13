@@ -1,17 +1,13 @@
-// 构建节点需能够访问 Docker，Jenkins 需安装 Docker Pipeline 插件。
+// 在可执行 Docker 命令并能访问 Docker 服务的 Linux 节点上运行。
 pipeline {
-  agent {
-    docker {
-      image 'electronuserland/builder:22-wine'
-      args '--platform=linux/amd64'
-    }
-  }
+  agent any
 
   options {
     skipDefaultCheckout(true)
   }
 
   environment {
+    BUILDER_IMAGE = 'electronuserland/builder:22-wine'
     CI = 'true'
     COREPACK_ENABLE_DOWNLOAD_PROMPT = '0'
     COREPACK_HOME = '/tmp/corepack'
@@ -30,20 +26,13 @@ pipeline {
       }
     }
 
-    stage('检查构建环境') {
+    stage('准备构建镜像') {
       steps {
         sh '''
             set -eu
-            node --version
-            corepack pnpm --version
+            docker version
+            docker pull --platform=linux/amd64 "$BUILDER_IMAGE"
           '''
-      }
-    }
-
-    stage('安装依赖') {
-      steps {
-        // 允许安装时同步锁文件，兼容现有 package.json 与锁文件的差异。
-        sh 'corepack pnpm install'
       }
     }
 
@@ -51,8 +40,29 @@ pipeline {
       steps {
         sh '''
             set -eu
-            rm -rf out dist
-            corepack pnpm run build:win
+            docker run --rm --init \\
+              --platform=linux/amd64 \\
+              --user "$(id -u):$(id -g)" \\
+              --volume "$WORKSPACE:/project" \\
+              --workdir /project \\
+              --env CI \\
+              --env COREPACK_ENABLE_DOWNLOAD_PROMPT \\
+              --env COREPACK_HOME \\
+              --env XDG_CACHE_HOME \\
+              --env XDG_DATA_HOME \\
+              --env npm_config_cache \\
+              --env ELECTRON_CACHE \\
+              --env ELECTRON_BUILDER_CACHE \\
+              --env WINEPREFIX \\
+              "$BUILDER_IMAGE" \\
+              bash -euc '
+                node --version
+                corepack pnpm --version
+                wine --version
+                corepack pnpm install
+                rm -rf out dist
+                corepack pnpm run build:win
+              '
         '''
       }
     }
