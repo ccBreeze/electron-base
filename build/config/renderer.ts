@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { defineConfig, type ElectronViteConfig } from 'electron-vite'
+import { defineConfig, type UserConfig } from 'electron-vite'
 import type { ConfigEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import compressRenderer from '../plugins/rollup-plugin-compress-renderer.ts'
@@ -18,7 +18,7 @@ export const rendererConfig = (config: ConfigEnv) => {
       },
       plugins: [vue(), isCompressRenderer && compressRenderer({ mode: config.mode })],
     },
-  } as ElectronViteConfig
+  } as UserConfig
 }
 
 export default defineConfig(rendererConfig)

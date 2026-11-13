@@ -10,3 +10,4 @@ logs
 server/static/*
 # 保留目录
 !server/static/.gitkeep
+.omc
