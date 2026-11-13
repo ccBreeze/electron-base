@@ -56,12 +56,15 @@ pipeline {
               --env WINEPREFIX \\
               "$BUILDER_IMAGE" \\
               bash -euc '
+                export XDG_RUNTIME_DIR=/tmp/jenkins-runtime
+                mkdir -p "$WINEPREFIX" "$XDG_RUNTIME_DIR"
+                chmod 700 "$XDG_RUNTIME_DIR"
                 node --version
                 corepack pnpm --version
                 wine --version
                 corepack pnpm install
                 rm -rf out dist
-                corepack pnpm run build:win
+                corepack pnpm run build:win --publish never
               '
         '''
       }
