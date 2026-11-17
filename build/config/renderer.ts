@@ -6,9 +6,12 @@ import compressRenderer from '../plugins/rollup-plugin-compress-renderer.ts'
 
 const getResolvePath = (dir: string) => resolve(process.cwd(), dir)
 
-const isCompressRenderer = process.argv.includes('--compress')
+type RendererConfigOptions = {
+  isCompressRenderer?: boolean
+}
 
-export const rendererConfig = (config: ConfigEnv) => {
+export const rendererConfig = (config: ConfigEnv, options: RendererConfigOptions = {}) => {
+  const { isCompressRenderer = true } = options
   return {
     renderer: {
       resolve: {
@@ -21,4 +24,4 @@ export const rendererConfig = (config: ConfigEnv) => {
   } as UserConfig
 }
 
-export default defineConfig(rendererConfig)
+export default defineConfig((config) => rendererConfig(config))
