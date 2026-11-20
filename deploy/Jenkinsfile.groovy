@@ -1,3 +1,5 @@
+def dingTalkNotifier
+
 pipeline {
   agent any
 
@@ -8,6 +10,8 @@ pipeline {
   options {
     skipDefaultCheckout(true)
     buildDiscarder(logRotator(numToKeepStr: '5'))
+    timestamps()
+    timeout(time: 10, unit: 'MINUTES')
   }
 
   parameters {
@@ -16,13 +20,22 @@ pipeline {
   }
 
   environment {
-    CI = 'true'
+    /* 钉钉机器人 ID */
+    DINGTALK_ROBOT_ID = 'd1585a55-ad97-4295-84f9-0afef92633fa'
   }
 
   stages {
     stage('检出代码') {
       steps {
         git branch: 'ci/jenkins', credentialsId: 'da22f974-8593-4da2-900b-1a420cc3c365', url: 'https://github.com/ccBreeze/electron-base'
+
+        // 加载钉钉通知脚本
+        script {
+          catchError(buildResult: 'SUCCESS', catchInterruptions: false, message: '钉钉通知脚本加载失败') {
+            dingTalkNotifier = load 'deploy/notifyDingTalk.groovy'
+          }
+          dingTalkNotifier?.send('STARTED')
+        }
       }
     }
 
@@ -38,7 +51,7 @@ pipeline {
     stage('安装依赖并清理产物') {
       steps {
         sh '''
-            pnpm install
+            pnpm install --frozen-lockfile
             rm -rf out dist
           '''
       }
@@ -84,6 +97,14 @@ pipeline {
             pnpm run build:renderer --mode "$ENVIRONMENT"
           '''
         archiveArtifacts(artifacts: 'dist/renderer-*.zip', fingerprint: true)
+      }
+    }
+  }
+
+  post {
+    always {
+      script {
+        dingTalkNotifier?.send()
       }
     }
   }
