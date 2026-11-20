@@ -1,3 +1,5 @@
+import java.util.regex.Pattern
+
 def dingTalkNotifier
 
 pipeline {
@@ -14,7 +16,23 @@ pipeline {
     timeout(time: 10, unit: 'MINUTES')
   }
 
+  triggers {
+    GenericTrigger(
+      genericVariables: [
+        [key: 'WEBHOOK_REF', value: '$.ref'],
+        [key: 'BRANCH', value: '$.ref', regexpFilter: '^refs/heads/'],
+        [key: 'WEBHOOK_COMMIT', value: '$.after'],
+        [key: 'WEBHOOK_DELETED', value: '$.deleted']
+      ],
+      tokenCredentialId: 'electron-base-webhook-token',
+      causeString: 'GitHub push $WEBHOOK_REF',
+      regexpFilterText: '$WEBHOOK_DELETED $WEBHOOK_REF $WEBHOOK_COMMIT',
+      regexpFilterExpression: '^false refs/heads/(?:main|ci/jenkins) [0-9a-f]{40}$'
+    )
+  }
+
   parameters {
+    choice(name: 'BRANCH', choices: ['ci/jenkins', 'main'], description: '选择要构建的代码分支')
     choice(name: 'PLATFORM', choices: ['windows', 'web'], description: '选择构建平台')
     choice(name: 'ENVIRONMENT', choices: ['uat', 'production'], description: '选择构建环境')
   }
@@ -27,10 +45,22 @@ pipeline {
   stages {
     stage('检出代码') {
       steps {
-        git branch: 'ci/jenkins', credentialsId: 'da22f974-8593-4da2-900b-1a420cc3c365', url: 'https://github.com/ccBreeze/electron-base'
-
-        // 加载钉钉通知脚本
         script {
+          def buildBranch = params.BRANCH
+          // Webhook 构建锁定推送的提交，避免排队期间分支更新改变打包内容。
+          def revision = env.WEBHOOK_COMMIT ?: "*/${buildBranch}"
+          echo "构建分支: ${buildBranch}"
+          echo "Commit: ${revision}"
+          checkout poll: false, scm: scmGit(
+            branches: [[name: revision]],
+            extensions: [localBranch(localBranch: buildBranch)],
+            userRemoteConfigs: [[
+              credentialsId: 'da22f974-8593-4da2-900b-1a420cc3c365',
+              url: 'https://github.com/ccBreeze/electron-base'
+            ]]
+          )
+
+          // 加载钉钉通知脚本
           catchError(buildResult: 'SUCCESS', catchInterruptions: false, message: '钉钉通知脚本加载失败') {
             dingTalkNotifier = load 'deploy/notifyDingTalk.groovy'
           }
