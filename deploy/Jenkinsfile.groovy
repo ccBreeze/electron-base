@@ -34,7 +34,16 @@ pipeline {
   }
 
   parameters {
-    choice(name: 'BRANCH', choices: ['ci/jenkins', 'main'], description: '选择要构建的代码分支')
+    gitParameter(
+      name: 'BRANCH',
+      type: 'PT_BRANCH',
+      branchFilter: 'origin/(.*)',
+      defaultValue: 'ci/jenkins',
+      selectedValue: 'DEFAULT',
+      listSize: '1',
+      quickFilterEnabled: true,
+      description: '选择要构建的代码分支'
+    )
     choice(name: 'PLATFORM', choices: ['windows', 'web'], description: '选择构建平台')
     choice(name: 'ENVIRONMENT', choices: ['uat', 'production'], description: '选择构建环境')
   }
