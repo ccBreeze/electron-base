@@ -11,6 +11,8 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
+    // 不允许并发，取消仍在执行的上一条构建
+    disableConcurrentBuilds(abortPrevious: true)
     buildDiscarder(logRotator(numToKeepStr: '5'))
     timestamps()
     timeout(time: 10, unit: 'MINUTES')
