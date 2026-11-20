@@ -22,15 +22,7 @@ const config = {
     buildResources: 'build',
   },
   // 打包后会放入到 app.asar 目录中
-  files: [
-    '!**/.vscode/*',
-    '!src/*',
-    '!electron.vite.config.{js,ts,mjs,cjs}',
-    '!{eslint.config.js,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}',
-    '!{.env,.env.*,.npmrc,pnpm-lock.yaml}',
-    '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}',
-    '!out/renderer/**', // app.asar 目录中将不存在 out/renderer 文件夹
-  ],
+  files: ['out/main/**', 'out/preload/**', 'resources/**'],
   // 将文件或目录直接复制到应用程序的资源目录
   extraResources: [
     // 将文件夹复制到 app.asar.unpacked 目录下
