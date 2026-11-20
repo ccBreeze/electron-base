@@ -34,15 +34,34 @@ pipeline {
   }
 
   parameters {
-    gitParameter(
+    activeChoice(
       name: 'BRANCH',
-      type: 'PT_BRANCH',
-      branchFilter: 'origin/(.*)',
-      defaultValue: 'ci/jenkins',
-      selectedValue: 'DEFAULT',
-      listSize: '1',
-      quickFilterEnabled: true,
-      description: '选择要构建的代码分支'
+      description: '选择要构建的代码分支',
+      choiceType: 'PT_SINGLE_SELECT',
+      filterable: true,
+      filterLength: 1,
+      script: [
+        $class: 'GroovyScript',
+        script: [sandbox: false, script: '''
+          import hudson.EnvVars
+          import hudson.model.Job
+          import hudson.model.TaskListener
+          import org.kohsuke.stapler.Stapler
+
+          // 打开构建表单时才读取远端分支，Webhook 取默认参数时无需访问 GitHub。
+          if (Stapler.getCurrentRequest2()?.findAncestorObject(Job.class) != jenkinsProject) {
+            return ['ci/jenkins:selected', 'main']
+          }
+
+          def scm = jenkinsProject.definition.scm
+          def remote = scm.userRemoteConfigs.first()
+          def git = scm.createClient(TaskListener.NULL, new EnvVars(), jenkinsProject.lastBuild, null)
+          def refs = git.getRemoteReferences(remote.url, null, true, false)
+          def branches = refs.keySet().collect { ref -> ref.replaceFirst('^refs/heads/', '') }.sort()
+          return branches.collect { branch -> branch == 'ci/jenkins' ? 'ci/jenkins:selected' : branch }
+        '''],
+        fallbackScript: [sandbox: true, script: "return ['ci/jenkins:selected', 'main']"]
+      ]
     )
     choice(name: 'PLATFORM', choices: ['windows', 'web'], description: '选择构建平台')
     choice(name: 'ENVIRONMENT', choices: ['uat', 'production'], description: '选择构建环境')
