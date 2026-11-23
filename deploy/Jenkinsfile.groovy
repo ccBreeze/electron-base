@@ -1,7 +1,5 @@
 import java.util.regex.Pattern
 
-def dingTalkNotifier
-
 pipeline {
   agent any
 
@@ -71,11 +69,7 @@ pipeline {
             ]]
           )
 
-          // 加载钉钉通知脚本
-          catchError(buildResult: 'SUCCESS', catchInterruptions: false, message: '钉钉通知脚本加载失败') {
-            dingTalkNotifier = load 'deploy/notifyDingTalk.groovy'
-          }
-          dingTalkNotifier?.send('STARTED')
+          sendDingTalkNotification('STARTED')
         }
       }
     }
@@ -145,8 +139,19 @@ pipeline {
   post {
     always {
       script {
-        dingTalkNotifier?.send()
+        sendDingTalkNotification()
       }
     }
   }
+}
+
+@Library('jenkins-shared-library')
+def sendDingTalkNotification(String status = null) {
+  def notificationFields = [
+    '构建分支': env.WEBHOOK_REF?.replaceFirst('^refs/heads/', '') ?: params.BRANCH,
+    '构建平台': params.PLATFORM,
+    '构建环境': params.ENVIRONMENT
+  ]
+
+  notifyDingTalk(status: status, fields: notificationFields)
 }
